@@ -1,0 +1,22 @@
+---
+namespace: silexdata
+name: mysql
+version: 1.0.0
+readme: README.md
+authors:
+  - Adam Brauns - abrauns@silexdata.com
+description: SilexData MySQL collection
+license:
+  - Apache-2.0
+license_file: LICENSE
+tags:
+  - collection
+  - silexdata
+  - infrastructure
+  - mysql
+dependencies: {}
+repository: https://github.com/SilexDataTeam/silexdata.mysql
+documentation: https://galaxy.ansible.com/ui/repo/published/silexdata/mysql/docs/
+homepage: https://www.silexdata.com/
+issues: https://github.com/SilexDataTeam/silexdata.mysql/issues
+build_ignore: []
