@@ -1,0 +1,14 @@
+---
+ancestor: null
+releases:
+  1.0.0:
+    changes:
+      minor_changes:
+        - Added an inventory plugin for MySQL.
+        - Set up the collection structure, licensing, and documentation.
+      release_summary: 'Initial release of the silexdata.mysql Ansible Collection.
+
+        '
+    fragments:
+      - 1.0.0.yml
+    release_date: '2025-08-15'
