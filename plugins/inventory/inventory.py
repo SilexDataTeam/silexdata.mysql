@@ -32,27 +32,37 @@ options:
   db_host:
     description:
       - Database host
+    env:
+      - name: MYSQL_INVENTORY_DB_HOST
     required: true
     type: str
   db_port:
     description:
       - Database port
+    env:
+      - name: MYSQL_INVENTORY_DB_PORT
     required: false
     default: 3306
     type: int
   db_user:
     description:
       - Database user
+    env:
+      - name: MYSQL_INVENTORY_DB_USER
     required: true
     type: str
   db_password:
     description:
       - Database password
+    env:
+      - name: MYSQL_INVENTORY_DB_PASSWORD
     required: true
     type: str
   db_name:
     description:
       - Database name
+    env:
+      - name: MYSQL_INVENTORY_DB_NAME
     required: true
     type: str
   db_query:
@@ -159,6 +169,7 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
         if not isinstance(query, str) or not query.strip():
             error = "Query must be a non-empty string"
             display.error(error)
+
             raise AnsibleError(error)
         if not query.strip().upper().startswith("SELECT"):
             error = "Database query must be a valid SELECT statement"
@@ -174,6 +185,7 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
                 database=self.get_option("db_name"),
                 cursorclass=pymysql.cursors.DictCursor,
             )
+
             display.vv(
                 f"Connected to database: {self.get_option('db_name')} on {self.get_option('db_host')}"
             )
