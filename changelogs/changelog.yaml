@@ -12,3 +12,11 @@ releases:
     fragments:
       - 1.0.0.yml
     release_date: '2025-08-15'
+  1.0.1:
+    changes:
+      minor_changes:
+        - inventory - Added environment variable option for ``db_host``, ``db_port``,
+          ``db_user``, ``db_password``, and ``db_name`` options.
+    fragments:
+      - 20250909-add-env-var-options.yml
+    release_date: '2025-09-09'
