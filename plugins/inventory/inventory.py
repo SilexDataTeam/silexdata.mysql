@@ -31,7 +31,7 @@ options:
     required: true
     type: list
     elements: str
-    choices: ['inventory', 'silexdata.mysql.inventory']
+    choices: ['silexdata.mysql.inventory']
   db_host:
     description:
       - Database host
@@ -152,23 +152,28 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
         cache_key = self.get_cache_key(path)
 
         user_cache_setting = self.get_option("cache")
-        utilize_cache = user_cache_setting and cache
-        display.vv(f"Utilize cache: {utilize_cache}")
+        # cache=False is a refresh (ansible-inventory --flush-cache): query
+        # afresh, and store the result for the next cached run.
+        attempt_to_read_cache = user_cache_setting and cache
+        cache_needs_update = user_cache_setting and not cache
+        display.vv(f"Utilize cache: {attempt_to_read_cache}")
 
         raw_hosts = None
-        if utilize_cache:
+        if attempt_to_read_cache:
             try:
                 raw_hosts = self._cache[cache_key]
                 display.vv(f"Cache hit for key: {cache_key}")
             except KeyError:
                 display.vv(f"Cache miss for key: {cache_key}")
+                cache_needs_update = True
 
         if raw_hosts is None:
             display.vv("No cached data found, querying database")
             raw_hosts = self._get_raw_hosts()
-            if utilize_cache:
-                self._cache[cache_key] = raw_hosts
-                display.vv(f"Cached data for key: {cache_key}")
+
+        if cache_needs_update:
+            self._cache[cache_key] = raw_hosts
+            display.vv(f"Cached data for key: {cache_key}")
 
         display.vv(f"Populating inventory with {len(raw_hosts)} hosts")
         self._populate(raw_hosts)

@@ -154,11 +154,17 @@ def test_other_sources_are_left_to_other_plugins(tmp_path, name):
 # plugin -----------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("plugin", ["silexdata.mysql.inventory", "inventory"])
-def test_each_documented_plugin_name_is_accepted(server, load, plugin):
-    # DOCUMENTATION: choices: ['inventory', 'silexdata.mysql.inventory']
-    inventory = load(CONNECTION + query("SELECT * FROM hosts"), plugin=plugin)
+def test_the_documented_plugin_name_is_accepted(server, load):
+    # DOCUMENTATION: choices: ['silexdata.mysql.inventory']
+    inventory = load(CONNECTION + query("SELECT * FROM hosts"), plugin="silexdata.mysql.inventory")
     assert sorted(inventory.hosts) == ["db-1", "web-1"]
+
+
+def test_the_short_plugin_name_is_refused(server, load):
+    # Ansible accepts only the name a collection plugin was loaded by - its FQCN.
+    with pytest.raises(AnsibleError, match="Incorrect plugin name"):
+        load(CONNECTION + query("SELECT * FROM hosts"), plugin="inventory")
+    assert not server.connections
 
 
 # Connection options -------------------------------------------------------------
