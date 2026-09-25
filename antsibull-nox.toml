@@ -128,7 +128,9 @@ min_version = "2.16"
 # which should point at a dry-run/.invalid host and cause live tests to be
 # skipped.
 [sessions.ansible_test_integration_w_default_container.ansible_vars_from_env_vars]
-# TODO: replace with the real setup_mysql_* variables your
-# setup_mysql integration role's defaults/main.yml declares.
-setup_mysql_endpoint = "MYSQL_ENDPOINT"
+setup_mysql_db_host = "MYSQL_INVENTORY_DB_HOST"
+setup_mysql_db_port = "MYSQL_INVENTORY_DB_PORT"
+setup_mysql_db_user = "MYSQL_INVENTORY_DB_USER"
+setup_mysql_db_password = "MYSQL_INVENTORY_DB_PASSWORD"
+setup_mysql_db_name = "MYSQL_INVENTORY_DB_NAME"
 setup_mysql_require_service = "MYSQL_REQUIRE_SERVICE"

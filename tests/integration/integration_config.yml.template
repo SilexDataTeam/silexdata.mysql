@@ -5,12 +5,13 @@
 # the live (service-dependent) integration tests.
 # integration_config.yml is git-ignored and must never be committed.
 
-# TODO: after renaming tests/integration/targets/setup_EXAMPLE/ to
-# setup_mysql/, override the placeholder credentials declared
-# in that role's defaults/main.yml here, e.g.:
-# setup_mysql_endpoint: "https://api.example.com"
-# setup_mysql_username: "..."
-# setup_mysql_password: "..."
+# Override the placeholder credentials declared in
+# tests/integration/targets/setup_mysql/defaults/main.yml:
+# setup_mysql_db_host: "db.example.com"
+# setup_mysql_db_port: 3306
+# setup_mysql_db_user: "..."
+# setup_mysql_db_password: "..."
+# setup_mysql_db_name: "..."
 
 # Fail the run (instead of warning and skipping live tests) when the service
 # is unreachable. Recommended for pipelines that require live coverage.

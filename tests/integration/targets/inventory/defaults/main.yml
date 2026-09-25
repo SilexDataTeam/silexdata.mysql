@@ -1,0 +1,56 @@
+---
+# SPDX-FileCopyrightText: Silex Data Solutions
+# SPDX-License-Identifier: Apache-2.0
+# Inherited from the setup_mysql role; tasks reference only these inventory_*
+# names, never setup_mysql_* directly.
+inventory_db_host: "{{ setup_mysql_db_host }}"
+inventory_db_port: "{{ setup_mysql_db_port }}"
+inventory_db_user: "{{ setup_mysql_db_user }}"
+inventory_db_password: "{{ setup_mysql_db_password }}"
+inventory_db_name: "{{ setup_mysql_db_name }}"
+
+# Whether the service was reachable (set by the setup_mysql role). Live,
+# service-dependent tests are gated on this.
+inventory_service_available: "{{ setup_mysql_service_available }}"
+
+# A database host that can never resolve (RFC 6761), for the tests that must
+# fail without reaching any server.
+inventory_unreachable_db_host: "unreachable.mysql.invalid"
+
+# Environment for every ansible-inventory / ansible-playbook run: only this
+# plugin may claim a source, and a source it cannot parse is an error rather
+# than a warning followed by an empty inventory.
+inventory_env:
+  ANSIBLE_INVENTORY_ENABLED: silexdata.mysql.inventory
+  ANSIBLE_INVENTORY_UNPARSED_FAILED: "true"
+
+# Prefixed to every command, so the plugin's MYSQL_INVENTORY_DB_* environment
+# variables cannot leak in from the test runner: only what a source file says
+# takes effect, unless a test sets them on purpose.
+inventory_clean_env:
+  - env
+  - -u
+  - MYSQL_INVENTORY_DB_HOST
+  - -u
+  - MYSQL_INVENTORY_DB_PORT
+  - -u
+  - MYSQL_INVENTORY_DB_USER
+  - -u
+  - MYSQL_INVENTORY_DB_PASSWORD
+  - -u
+  - MYSQL_INVENTORY_DB_NAME
+
+# The live server's connection, for the tests that pass it the documented
+# second way: the plugin's environment variables.
+inventory_live_env:
+  MYSQL_INVENTORY_DB_HOST: "{{ inventory_db_host }}"
+  MYSQL_INVENTORY_DB_PORT: "{{ inventory_db_port }}"
+  MYSQL_INVENTORY_DB_USER: "{{ inventory_db_user }}"
+  MYSQL_INVENTORY_DB_PASSWORD: "{{ inventory_db_password }}"
+  MYSQL_INVENTORY_DB_NAME: "{{ inventory_db_name }}"
+
+# Rows the live tests select as literals, so they need no table.
+inventory_live_query: >-
+  SELECT 'itest-web-1' AS hostname, 'itest-web-1.example.com' AS fqdn, 'DEV' AS env, 'web' AS application
+  UNION ALL SELECT 'itest-db-1', 'itest-db-1.example.com', 'PROD', 'db'
+  UNION ALL SELECT NULL, 'itest-nameless.example.com', 'DEV', 'web'
