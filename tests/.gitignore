@@ -1,2 +1,10 @@
+# SPDX-FileCopyrightText: Silex Data Solutions
+# SPDX-License-Identifier: Apache-2.0
+# ansible-test working output
 output/
+
+# Local integration credentials (never commit real credentials)
+integration/integration_config.yml
+
+# Generated inventory for local integration runs
 integration/inventory
