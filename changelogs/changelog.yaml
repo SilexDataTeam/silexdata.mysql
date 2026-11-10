@@ -20,3 +20,22 @@ releases:
     fragments:
       - 20250909-add-env-var-options.yml
     release_date: '2025-09-09'
+  1.0.2:
+    changes:
+      bugfixes:
+        - galaxy.yml - declare GPL-3.0-or-later, the license of the inventory plugin,
+          alongside Apache-2.0. The collection declared only Apache-2.0 before.
+        - inventory - document ``silexdata.mysql.inventory`` as the only accepted
+          ``plugin`` value. The short name ``inventory`` was documented but always
+          refused by Ansible.
+        - inventory - report that the ``pymysql`` Python library is required when
+          it is not installed, instead of failing to load the plugin.
+        - inventory - store the refreshed inventory in the cache on ``--flush-cache``.
+          It was re-read from the database but not cached, so the next cached run
+          still served the old data.
+    fragments:
+      - adopt-shared-ci.yml
+      - inventory-cache-and-plugin-name.yml
+      - inventory-license.yml
+      - inventory-sanity.yml
+    release_date: '2026-11-10'

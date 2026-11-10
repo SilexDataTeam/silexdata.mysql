@@ -1,6 +1,0 @@
----
-bugfixes:
-  - inventory - store the refreshed inventory in the cache on ``--flush-cache``. It was re-read from the database but not cached, so the next cached
-    run still served the old data.
-  - inventory - document ``silexdata.mysql.inventory`` as the only accepted ``plugin`` value. The short name ``inventory`` was documented but
-    always refused by Ansible.
