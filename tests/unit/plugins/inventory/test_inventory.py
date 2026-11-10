@@ -1,5 +1,7 @@
-# SPDX-FileCopyrightText: Silex Data Solutions
-# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026, Silex Data Solutions <info@silexdata.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-FileCopyrightText: 2026 Silex Data Solutions <info@silexdata.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Unit tests for the silexdata.mysql.inventory inventory plugin.
 
 The plugin is driven only through parse(), the way ansible-inventory drives it,
@@ -152,11 +154,17 @@ def test_other_sources_are_left_to_other_plugins(tmp_path, name):
 # plugin -----------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("plugin", ["silexdata.mysql.inventory", "inventory"])
-def test_each_documented_plugin_name_is_accepted(server, load, plugin):
-    # DOCUMENTATION: choices: ['inventory', 'silexdata.mysql.inventory']
-    inventory = load(CONNECTION + query("SELECT * FROM hosts"), plugin=plugin)
+def test_the_documented_plugin_name_is_accepted(server, load):
+    # DOCUMENTATION: choices: ['silexdata.mysql.inventory']
+    inventory = load(CONNECTION + query("SELECT * FROM hosts"), plugin="silexdata.mysql.inventory")
     assert sorted(inventory.hosts) == ["db-1", "web-1"]
+
+
+def test_the_short_plugin_name_is_refused(server, load):
+    # Ansible accepts only the name a collection plugin was loaded by - its FQCN.
+    with pytest.raises(AnsibleError, match="Incorrect plugin name"):
+        load(CONNECTION + query("SELECT * FROM hosts"), plugin="inventory")
+    assert not server.connections
 
 
 # Connection options -------------------------------------------------------------
