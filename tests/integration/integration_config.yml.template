@@ -1,0 +1,18 @@
+---
+# SPDX-FileCopyrightText: Silex Data Solutions
+# SPDX-License-Identifier: Apache-2.0
+# Copy this file to integration_config.yml and fill in real credentials to run
+# the live (service-dependent) integration tests.
+# integration_config.yml is git-ignored and must never be committed.
+
+# Override the placeholder credentials declared in
+# tests/integration/targets/setup_mysql/defaults/main.yml:
+# setup_mysql_db_host: "db.example.com"
+# setup_mysql_db_port: 3306
+# setup_mysql_db_user: "..."
+# setup_mysql_db_password: "..."
+# setup_mysql_db_name: "..."
+
+# Fail the run (instead of warning and skipping live tests) when the service
+# is unreachable. Recommended for pipelines that require live coverage.
+# setup_mysql_require_service: true

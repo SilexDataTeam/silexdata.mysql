@@ -1,0 +1,103 @@
+---
+# SPDX-FileCopyrightText: Silex Data Solutions
+# SPDX-License-Identifier: Apache-2.0
+# Live (service-dependent) tests: validate the inventory the plugin builds from
+# rows a real MySQL server returns. These require a reachable server, so the
+# whole block is skipped when the setup_mysql role reports the service as
+# unavailable. In that case setup_mysql has already emitted a warning (or failed
+# the run, if setup_mysql_require_service is enabled).
+#
+# The rows are SELECTed as literals (inventory_live_query), so no table is
+# needed and nothing on the server is changed.
+
+- name: Expected-return-values | Live inventory checks
+  when: inventory_service_available | bool
+  block:
+    - name: Expected-return-values | Write a source that sets every option itself
+      ansible.builtin.copy:
+        dest: "{{ inventory_workdir.path }}/live.mysql.yml"
+        content: |
+          ---
+          plugin: silexdata.mysql.inventory
+          db_host: {{ inventory_db_host | to_json }}
+          db_port: {{ inventory_db_port }}
+          db_user: {{ inventory_db_user | to_json }}
+          db_password: {{ inventory_db_password | to_json }}
+          db_name: {{ inventory_db_name | to_json }}
+          db_query: {{ inventory_live_query | to_json }}
+          keyed_groups:
+            - key: application
+              prefix: app
+          groups:
+            dev: "env == 'DEV'"
+            prod: "env == 'PROD'"
+          compose:
+            site_fqdn: fqdn
+        mode: "0600"
+      no_log: true
+
+    - name: Expected-return-values | List the inventory from that source
+      ansible.builtin.command:
+        argv: "{{ inventory_clean_env + ['ansible-inventory', '-i', inventory_workdir.path ~ '/live.mysql.yml', '--list'] }}"
+      environment: "{{ inventory_env }}"
+      register: inventory_live
+      changed_when: false
+      failed_when: false
+
+    - name: Expected-return-values | Assert every named row became a host with its columns
+      vars:
+        inventory_inv: "{{ inventory_live.stdout | from_json }}"
+        inventory_hostvars: "{{ inventory_inv._meta.hostvars }}"
+      ansible.builtin.assert:
+        that:
+          - inventory_live.rc == 0
+          - inventory_hostvars.keys() | sort == ['itest-db-1', 'itest-web-1']
+          - inventory_hostvars['itest-web-1'].env == 'DEV'
+          - inventory_hostvars['itest-web-1'].application == 'web'
+          - inventory_hostvars['itest-web-1'].site_fqdn == 'itest-web-1.example.com'
+          - inventory_inv.app_web.hosts == ['itest-web-1']
+          - inventory_inv.app_db.hosts == ['itest-db-1']
+          - inventory_inv.dev.hosts == ['itest-web-1']
+          - inventory_inv.prod.hosts == ['itest-db-1']
+        fail_msg: >-
+          Expected a host per row with a hostname (the NULL one skipped), its columns
+          as variables, and the keyed_groups, groups and compose results.
+          rc={{ inventory_live.rc }} stderr={{ inventory_live.stderr }}
+        success_msg: The rows became hosts, variables and groups.
+
+    - name: Expected-return-values | Assert the row without a hostname was reported
+      ansible.builtin.assert:
+        that:
+          - "'itest-nameless.example.com' in inventory_live.stderr"
+        fail_msg: A row whose hostname_field is empty must be skipped with a warning.
+        success_msg: The row without a hostname was skipped with a warning.
+
+    - name: Expected-return-values | Write a source that names hosts by another column
+      ansible.builtin.copy:
+        dest: "{{ inventory_workdir.path }}/by-fqdn.mysql.yml"
+        content: |
+          ---
+          plugin: silexdata.mysql.inventory
+          db_query: {{ inventory_live_query | to_json }}
+          hostname_field: fqdn
+        mode: "0600"
+
+    - name: Expected-return-values | List the inventory with the MYSQL_INVENTORY_DB_* variables
+      ansible.builtin.command:
+        argv: [ansible-inventory, -i, "{{ inventory_workdir.path }}/by-fqdn.mysql.yml", --list]
+      environment: "{{ inventory_env | combine(inventory_live_env) }}"
+      register: inventory_by_fqdn
+      changed_when: false
+      failed_when: false
+      no_log: true
+
+    - name: Expected-return-values | Assert the environment connected and hostname_field named the hosts
+      ansible.builtin.assert:
+        that:
+          - inventory_by_fqdn.rc == 0
+          - (inventory_by_fqdn.stdout | from_json)._meta.hostvars.keys() | sort ==
+            ['itest-db-1.example.com', 'itest-nameless.example.com', 'itest-web-1.example.com']
+        fail_msg: >-
+          The MYSQL_INVENTORY_DB_* variables must connect in place of the source's options,
+          and hostname_field: fqdn must name every row by its fqdn. rc={{ inventory_by_fqdn.rc }}
+        success_msg: The environment's connection worked and hostname_field named the hosts.

@@ -1,0 +1,26 @@
+---
+# SPDX-FileCopyrightText: Silex Data Solutions
+# SPDX-License-Identifier: Apache-2.0
+# Variables owned by the setup_mysql role (role-name prefixed).
+#
+# Dry-run placeholders for the MySQL server the inventory plugin queries. The
+# plugin takes them as db_host, db_port, db_user, db_password and db_name (or
+# the MYSQL_INVENTORY_DB_* environment variables).
+#
+# Using the reserved .invalid TLD (RFC 6761) means the availability probe
+# below reliably reports the service as down during a dry-run, rather than
+# accidentally resolving to something reachable. For a live run, point these
+# at a real server and a user that may run SELECT statements.
+setup_mysql_db_host: "dry-run.mysql.invalid"
+setup_mysql_db_port: 3306
+setup_mysql_db_user: "dry-run-user"
+setup_mysql_db_password: "dry-run-password"
+setup_mysql_db_name: "dry_run"
+
+# Service-availability handling. By default an unreachable service produces a
+# warning and the live tests are skipped. Set this to true (e.g. from the
+# pipeline) to fail the run instead when the service is down.
+setup_mysql_require_service: false
+
+# Seconds to wait when probing the service endpoint for availability.
+setup_mysql_service_probe_timeout: 5

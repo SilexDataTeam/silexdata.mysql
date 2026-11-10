@@ -1,0 +1,5 @@
+---
+bugfixes:
+  - inventory - report that the ``pymysql`` Python library is required when it is not installed, instead of failing to load the plugin.
+trivial:
+  - inventory - start the DOCUMENTATION and EXAMPLES YAML with ``---`` and apply the shared ruff rules.

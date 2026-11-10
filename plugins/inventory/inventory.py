@@ -1,7 +1,10 @@
-# Copyright: (c) 2025, Adam Brauns (@AdamBrauns)
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Copyright (c) 2025, Adam Brauns (@AdamBrauns)
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-FileCopyrightText: 2025 Adam Brauns (@AdamBrauns)
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 DOCUMENTATION = r"""
+---
 name: inventory
 short_description: Dynamically builds Ansible inventory from a MySQL query
 description:
@@ -28,7 +31,7 @@ options:
     required: true
     type: list
     elements: str
-    choices: ['inventory', 'silexdata.mysql.inventory']
+    choices: ['silexdata.mysql.inventory']
   db_host:
     description:
       - Database host
@@ -85,6 +88,7 @@ options:
 """
 
 EXAMPLES = r"""
+---
 plugin: silexdata.mysql.inventory
 
 strict: false
@@ -111,11 +115,18 @@ groups:
   prod: "env == 'PROD'"
 """
 
-import pymysql
 from ansible.errors import AnsibleError
+from ansible.module_utils.basic import missing_required_lib
 from ansible.module_utils.common.text.converters import to_native
 from ansible.plugins.inventory import BaseInventoryPlugin, Cacheable, Constructable
 from ansible.utils.display import Display
+
+try:
+    import pymysql
+except ImportError:
+    HAS_PYMYSQL = False
+else:
+    HAS_PYMYSQL = True
 
 # Initialize Display instance
 display = Display()
@@ -141,28 +152,36 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
         cache_key = self.get_cache_key(path)
 
         user_cache_setting = self.get_option("cache")
-        utilize_cache = user_cache_setting and cache
-        display.vv(f"Utilize cache: {utilize_cache}")
+        # cache=False is a refresh (ansible-inventory --flush-cache): query
+        # afresh, and store the result for the next cached run.
+        attempt_to_read_cache = user_cache_setting and cache
+        cache_needs_update = user_cache_setting and not cache
+        display.vv(f"Utilize cache: {attempt_to_read_cache}")
 
         raw_hosts = None
-        if utilize_cache:
+        if attempt_to_read_cache:
             try:
                 raw_hosts = self._cache[cache_key]
                 display.vv(f"Cache hit for key: {cache_key}")
             except KeyError:
                 display.vv(f"Cache miss for key: {cache_key}")
+                cache_needs_update = True
 
         if raw_hosts is None:
             display.vv("No cached data found, querying database")
             raw_hosts = self._get_raw_hosts()
-            if utilize_cache:
-                self._cache[cache_key] = raw_hosts
-                display.vv(f"Cached data for key: {cache_key}")
+
+        if cache_needs_update:
+            self._cache[cache_key] = raw_hosts
+            display.vv(f"Cached data for key: {cache_key}")
 
         display.vv(f"Populating inventory with {len(raw_hosts)} hosts")
         self._populate(raw_hosts)
 
     def _get_raw_hosts(self):
+        if not HAS_PYMYSQL:
+            raise AnsibleError(missing_required_lib("pymysql"))
+
         connection = None
 
         query = self.get_option("db_query")
@@ -186,9 +205,7 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
                 cursorclass=pymysql.cursors.DictCursor,
             )
 
-            display.vv(
-                f"Connected to database: {self.get_option('db_name')} on {self.get_option('db_host')}"
-            )
+            display.vv(f"Connected to database: {self.get_option('db_name')} on {self.get_option('db_host')}")
 
             with connection.cursor() as cursor:
                 display.vvv(f"Executing query: {query}")
@@ -200,7 +217,7 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
         except Exception as e:
             error = f"Database query failed: {to_native(e)}"
             display.error(error)
-            raise AnsibleError(error)
+            raise AnsibleError(error) from e
 
         finally:
             if connection:
@@ -221,7 +238,7 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
             except Exception as e:
                 error = f"Failure parsing record: {to_native(e)}"
                 display.error(error)
-                raise AnsibleError(error)
+                raise AnsibleError(error) from e
 
     def _add_host(self, hostname, host_vars):
         strict = self.get_option("strict")
@@ -232,13 +249,7 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
             self.inventory.set_variable(hostname, var_name, var_value)
             display.vvvv(f"Set variable {var_name}={var_value} for host {hostname}")
 
-        self._set_composite_vars(
-            self.get_option("compose"), host_vars, hostname, strict=strict
-        )
-        self._add_host_to_composed_groups(
-            self.get_option("groups"), host_vars, hostname, strict=strict
-        )
-        self._add_host_to_keyed_groups(
-            self.get_option("keyed_groups"), host_vars, hostname, strict=strict
-        )
+        self._set_composite_vars(self.get_option("compose"), host_vars, hostname, strict=strict)
+        self._add_host_to_composed_groups(self.get_option("groups"), host_vars, hostname, strict=strict)
+        self._add_host_to_keyed_groups(self.get_option("keyed_groups"), host_vars, hostname, strict=strict)
         display.vvv(f"Completed processing for host: {hostname}")

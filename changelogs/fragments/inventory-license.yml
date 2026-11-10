@@ -1,0 +1,6 @@
+---
+bugfixes:
+  - galaxy.yml - declare GPL-3.0-or-later, the license of the inventory plugin, alongside Apache-2.0. The collection declared only Apache-2.0
+    before.
+trivial:
+  - inventory - give the plugin a license header the license checks can read, without the ``Copyright:`` colon and with SPDX tags.

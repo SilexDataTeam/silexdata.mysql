@@ -1,0 +1,76 @@
+---
+# SPDX-FileCopyrightText: Silex Data Solutions
+# SPDX-License-Identifier: Apache-2.0
+# Setup role for the silexdata.mysql integration tests.
+#
+# Responsibilities:
+#   1. Initialize the shared setup_mysql_* variables.
+#   2. Probe the target service for availability and record
+#      setup_mysql_service_available so service-dependent
+#      ("live") tests can be skipped when the service is down.
+#
+# When the service is unreachable the default behavior is to warn and let
+# live tests skip. Set setup_mysql_require_service=true to
+# fail the run instead.
+
+# The plugin takes flat db_* options, so there is no grouped auth variable to
+# build: targets inherit the setup_mysql_db_* variables through their own
+# defaults.
+
+# A real login with the plugin's own driver, so "available" means the server
+# answers *and* accepts the credentials: a live test run with a rejected login
+# would otherwise fail for a reason that has nothing to do with the plugin.
+- name: Probe the mysql service for availability
+  ansible.builtin.command:
+    argv:
+      - "{{ ansible_playbook_python }}"
+      - -c
+      - |
+        import os
+        import pymysql
+        pymysql.connect(
+            host=os.environ["PROBE_HOST"],
+            port=int(os.environ["PROBE_PORT"]),
+            user=os.environ["PROBE_USER"],
+            password=os.environ["PROBE_PASSWORD"],
+            database=os.environ["PROBE_DATABASE"],
+            connect_timeout=int(os.environ["PROBE_TIMEOUT"]),
+        ).close()
+  environment:
+    PROBE_HOST: "{{ setup_mysql_db_host }}"
+    PROBE_PORT: "{{ setup_mysql_db_port }}"
+    PROBE_USER: "{{ setup_mysql_db_user }}"
+    PROBE_PASSWORD: "{{ setup_mysql_db_password }}"
+    PROBE_DATABASE: "{{ setup_mysql_db_name }}"
+    PROBE_TIMEOUT: "{{ setup_mysql_service_probe_timeout }}"
+  changed_when: false
+  register: setup_mysql_probe
+  ignore_errors: true
+  # The environment carries the password.
+  no_log: true
+
+- name: Record whether the mysql service is available
+  ansible.builtin.set_fact:
+    setup_mysql_service_available: "{{ setup_mysql_probe is succeeded }}"
+
+- name: Fail because the mysql service is unavailable and is required
+  ansible.builtin.fail:
+    msg: >-
+      The mysql service is not reachable and
+      setup_mysql_require_service is enabled.
+  when:
+    - not (setup_mysql_service_available | bool)
+    - setup_mysql_require_service | bool
+
+- name: Warn that live tests will be skipped because the service is unavailable
+  ansible.builtin.debug:
+    # Prints a stable marker token (SETUP_SERVICE_UNAVAILABLE) so CI can detect
+    # this condition in the run output and raise a native warning annotation.
+    # Locally this just surfaces as a readable warning message.
+    msg: >-
+      SETUP_SERVICE_UNAVAILABLE: the mysql service is not
+      reachable; skipping live integration tests. Set
+      setup_mysql_require_service=true to fail instead.
+  when:
+    - not (setup_mysql_service_available | bool)
+    - not (setup_mysql_require_service | bool)

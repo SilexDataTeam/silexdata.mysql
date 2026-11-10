@@ -1,10 +1,18 @@
 <!--
-Copyright (c) Silex Data Team
-Licensed under the Apache License, Version 2.0 (see LICENSE or https://www.apache.org/licenses/LICENSE-2.0)
+Copyright (c) Silex Data Solutions
+SPDX-FileCopyrightText: Silex Data Solutions
 SPDX-License-Identifier: Apache-2.0
 -->
 
 # Silex Data MySQL Collection
+
+[![Lint](https://github.com/SilexDataTeam/silexdata.mysql/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/SilexDataTeam/silexdata.mysql/actions/workflows/lint.yml)
+[![Nox](https://github.com/SilexDataTeam/silexdata.mysql/actions/workflows/nox.yml/badge.svg?branch=main)](https://github.com/SilexDataTeam/silexdata.mysql/actions/workflows/nox.yml)
+[![Docs](https://github.com/SilexDataTeam/silexdata.mysql/actions/workflows/docs.yml/badge.svg?branch=main)](https://github.com/SilexDataTeam/silexdata.mysql/actions/workflows/docs.yml)
+[![Coverage](https://github.com/SilexDataTeam/silexdata.mysql/actions/workflows/coverage.yml/badge.svg?branch=main)](https://github.com/SilexDataTeam/silexdata.mysql/actions/workflows/coverage.yml)
+[![Coverage Report](https://img.shields.io/endpoint?url=https://silexdatateam.github.io/silexdata.mysql/coverage/coverage-badge.json)](https://silexdatateam.github.io/silexdata.mysql/coverage/)
+
+SilexData MySQL collection
 
 This repository contains the `silexdata.mysql` Ansible Collection. The collection provides modules and plugins for managing MySQL databases, users, privileges, and related resources with Ansible.
 
@@ -22,11 +30,21 @@ Some modules and plugins require external libraries. Please check the requiremen
 
 Please check the included content on the [Ansible Galaxy page for this collection](https://galaxy.ansible.com/ui/repo/published/silexdata/mysql/).
 
+## Documentation
+
+The full collection documentation (module/plugin reference, generated with `antsibull-docs`) is published on
+[GitHub Pages](https://silexdatateam.github.io/silexdata.mysql/).
+
+The [interactive, line-by-line test coverage report](https://silexdatateam.github.io/silexdata.mysql/coverage/) is
+published alongside it, reflecting the latest merge to `main`.
+
 ## Using this collection
 
 You must install this collection from [Ansible Galaxy](https://galaxy.ansible.com/ui/repo/published/silexdata/mysql/) using the `ansible-galaxy` command-line tool, regardless of your Ansible installation type:
 
-    ansible-galaxy collection install silexdata.mysql
+```shell
+ansible-galaxy collection install silexdata.mysql
+```
 
 You can also include it in a `requirements.yml` file and install it via `ansible-galaxy collection install -r requirements.yml` using the format:
 
@@ -53,6 +71,14 @@ See [Ansible Using collections](https://docs.ansible.com/ansible/latest/user_gui
 
 All types of contributions are very welcome.
 
+Every change goes through a pull request: branch from an up-to-date `main`,
+commit with [Conventional Commits](https://www.conventionalcommits.org/)
+messages, add or extend a changelog fragment under `changelogs/fragments/`,
+and open a PR. It merges once every required check has passed; nobody pushes
+to `main` directly. Merging publishes a new version when the PR's changelog
+fragments call for one; `trivial` fragments release nothing. The full procedure
+is in `.claude/rules/workflow.md`.
+
 You can find more information in the [developer guide for collections](https://docs.ansible.com/ansible/devel/dev_guide/developing_collections.html#contributing-to-collections), and in the [Ansible Community Guide](https://docs.ansible.com/ansible/latest/community/index.html).
 
 ### Running tests
@@ -63,11 +89,11 @@ See [here](https://docs.ansible.com/ansible/devel/dev_guide/developing_collectio
 
 To learn how to maintain / become a maintainer of this collection, refer to:
 
-* [Maintainer guidelines](https://github.com/ansible/community-docs/blob/main/maintaining.rst).
+- [Maintainer guidelines](https://github.com/ansible/community-docs/blob/main/maintaining.rst).
 
 It is necessary for maintainers of this collection to be subscribed to:
 
-* The collection itself (the `Watch` button → `All Activity` in the upper right corner of the repository's homepage).
+- The collection itself (the `Watch` button → `All Activity` in the upper right corner of the repository's homepage).
 
 ## Publishing New Version
 
@@ -86,8 +112,20 @@ See the [changelog](https://github.com/SilexDataTeam/silexdata.mysql/blob/main/C
 
 ## Licensing
 
-This collection is licensed under the Apache License, Version 2.0.
+This collection is licensed under the **Apache License, Version 2.0** by
+default - see [COPYING](COPYING) - with one exception, declared in the file's
+own SPDX header. The full license texts are under [LICENSES/](LICENSES).
 
-See the [LICENSE](LICENSE) file in this repository or visit the official license page: https://www.apache.org/licenses/LICENSE-2.0
+| Path | License |
+| --- | --- |
+| plugin code in `plugins/` (the `inventory` inventory plugin) | `GPL-3.0-or-later` |
+| everything else | `Apache-2.0` |
 
-You are free to use, modify, and distribute this collection under the terms of the Apache 2.0 license. Contributions to this project will also be licensed under Apache 2.0 unless otherwise noted.
+Plugin code is GPL-3.0-or-later because Ansible requires it for plugins that
+run inside the controller.
+
+Contributions are accepted under these same terms. Before changing any license
+header, read `.claude/rules/licensing.md` - in particular, code adapted from
+another project keeps its original license and attribution.
+
+Run `nox -e license-check` to verify compliance.

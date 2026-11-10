@@ -1,0 +1,135 @@
+---
+# SPDX-FileCopyrightText: Silex Data Solutions
+# SPDX-License-Identifier: Apache-2.0
+# Expected-failure tests for the inventory plugin.
+#
+# Each source here is one the plugin must refuse. None of them can reach a
+# server - the only host they name is under the reserved .invalid TLD - so they
+# run with or without a database.
+
+- name: Expected-failures | Write a source that omits the required db_query
+  ansible.builtin.copy:
+    dest: "{{ inventory_workdir.path }}/no-query.mysql.yml"
+    content: |
+      ---
+      plugin: silexdata.mysql.inventory
+      db_host: {{ inventory_unreachable_db_host }}
+      db_user: dry-run-user
+      db_password: dry-run-password
+      db_name: dry_run
+    mode: "0600"
+
+- name: Expected-failures | Load the source without a query
+  ansible.builtin.command:
+    argv: "{{ inventory_clean_env + ['ansible-inventory', '-i', inventory_workdir.path ~ '/no-query.mysql.yml', '--list'] }}"
+  environment: "{{ inventory_env }}"
+  register: inventory_no_query
+  changed_when: false
+  failed_when: false
+
+- name: Expected-failures | Assert the missing query was refused, by name
+  ansible.builtin.assert:
+    that:
+      - inventory_no_query.rc != 0
+      - "'db_query' in inventory_no_query.stderr"
+    fail_msg: >-
+      A source without db_query must be refused with an error naming the option.
+      rc={{ inventory_no_query.rc }} stderr={{ inventory_no_query.stderr }}
+    success_msg: The missing query was refused.
+
+- name: Expected-failures | Write a source whose query is not a SELECT
+  ansible.builtin.copy:
+    dest: "{{ inventory_workdir.path }}/delete.mysql.yml"
+    content: |
+      ---
+      plugin: silexdata.mysql.inventory
+      db_host: {{ inventory_unreachable_db_host }}
+      db_user: dry-run-user
+      db_password: dry-run-password
+      db_name: dry_run
+      db_query: DELETE FROM hosts
+    mode: "0600"
+
+- name: Expected-failures | Load the source with a non-SELECT query
+  ansible.builtin.command:
+    argv: "{{ inventory_clean_env + ['ansible-inventory', '-i', inventory_workdir.path ~ '/delete.mysql.yml', '--list'] }}"
+  environment: "{{ inventory_env }}"
+  register: inventory_delete
+  changed_when: false
+  failed_when: false
+
+# Refused before connecting: an attempt to reach the .invalid host would fail
+# with a connection error instead.
+- name: Expected-failures | Assert the non-SELECT query was refused before connecting
+  ansible.builtin.assert:
+    that:
+      - inventory_delete.rc != 0
+      - "'SELECT' in inventory_delete.stderr"
+      - "inventory_unreachable_db_host not in inventory_delete.stderr"
+    fail_msg: >-
+      A query that is not a SELECT must be refused without connecting.
+      rc={{ inventory_delete.rc }} stderr={{ inventory_delete.stderr }}
+    success_msg: The non-SELECT query was refused before connecting.
+
+- name: Expected-failures | Write a source naming another plugin
+  ansible.builtin.copy:
+    dest: "{{ inventory_workdir.path }}/wrong-plugin.mysql.yml"
+    content: |
+      ---
+      plugin: silexdata.mysql.not_inventory
+      db_host: {{ inventory_unreachable_db_host }}
+      db_user: dry-run-user
+      db_password: dry-run-password
+      db_name: dry_run
+      db_query: SELECT 1
+    mode: "0600"
+
+- name: Expected-failures | Load the source naming another plugin
+  ansible.builtin.command:
+    argv: "{{ inventory_clean_env + ['ansible-inventory', '-i', inventory_workdir.path ~ '/wrong-plugin.mysql.yml', '--list'] }}"
+  environment: "{{ inventory_env }}"
+  register: inventory_wrong_plugin
+  changed_when: false
+  failed_when: false
+
+- name: Expected-failures | Assert a plugin value outside its choices was refused
+  ansible.builtin.assert:
+    that:
+      - inventory_wrong_plugin.rc != 0
+      - "'silexdata.mysql.not_inventory' in inventory_wrong_plugin.stderr"
+    fail_msg: >-
+      plugin accepts only the plugin's own names.
+      rc={{ inventory_wrong_plugin.rc }} stderr={{ inventory_wrong_plugin.stderr }}
+    success_msg: The wrong plugin name was refused.
+
+- name: Expected-failures | Write a source whose db_host cannot be reached
+  ansible.builtin.copy:
+    dest: "{{ inventory_workdir.path }}/unreachable.mysql.yml"
+    content: |
+      ---
+      plugin: silexdata.mysql.inventory
+      db_host: {{ inventory_unreachable_db_host }}
+      db_user: dry-run-user
+      db_password: dry-run-password
+      db_name: dry_run
+      db_query: SELECT 1 AS hostname
+    mode: "0600"
+
+- name: Expected-failures | Load the source whose server cannot be reached
+  ansible.builtin.command:
+    argv: "{{ inventory_clean_env + ['ansible-inventory', '-i', inventory_workdir.path ~ '/unreachable.mysql.yml', '--list'] }}"
+  environment: "{{ inventory_env }}"
+  register: inventory_unreachable
+  changed_when: false
+  failed_when: false
+
+- name: Expected-failures | Assert the configured, unreachable host is what failed
+  ansible.builtin.assert:
+    that:
+      - inventory_unreachable.rc != 0
+      - "inventory_unreachable_db_host in inventory_unreachable.stderr"
+    fail_msg: >-
+      With every connection option set in the source, loading it must fail on
+      reaching {{ inventory_unreachable_db_host }}.
+      rc={{ inventory_unreachable.rc }} stderr={{ inventory_unreachable.stderr }}
+    success_msg: The plugin failed on the configured host.
